@@ -84,7 +84,7 @@ def plot_2d(fin, hist_name, output_name, title):
         return
     
     h.SetTitle(title)
-    h.GetXaxis().SetTitle("|#Delta#eta|")
+    h.GetXaxis().SetTitle("|#Delta y|")
     h.GetYaxis().SetTitle("|#Delta#phi|")
     h.GetZaxis().SetTitle("Events")
     
@@ -100,7 +100,7 @@ def plot_2d_all(fin, output_dir):
     c = ROOT.TCanvas("c2d_all", "", 1800, 500)
     c.Divide(3, 1)
     
-    hist_names = ["h2_deta_dphi_12", "h2_deta_dphi_1phi", "h2_deta_dphi_2phi"]
+    hist_names = ["h2_dy_dphi_12", "h2_dy_dphi_1phi", "h2_dy_dphi_2phi"]
     titles = ["J/#psi_{1} - J/#psi_{2}", "J/#psi_{1} - #phi", "J/#psi_{2} - #phi"]
     
     for i, (hname, title) in enumerate(zip(hist_names, titles)):
@@ -114,7 +114,7 @@ def plot_2d_all(fin, output_dir):
             continue
         
         h.SetTitle(title)
-        h.GetXaxis().SetTitle("|#Delta#eta|")
+        h.GetXaxis().SetTitle("|#Delta y|")
         h.GetYaxis().SetTitle("|#Delta#phi|")
         h.Draw("COLZ")
     
@@ -229,15 +229,15 @@ def main():
     print(f"Processing: {args.input}")
     print(f"Output directory: {args.output_dir}")
     
-    # Plot delta eta comparisons
+    # Plot delta y (rapidity) comparisons
     plot_1d_comparison(
         fin,
-        ["h_deta_12", "h_deta_1phi", "h_deta_2phi"],
+        ["h_dy_12", "h_dy_1phi", "h_dy_2phi"],
         ["J/#psi_{1}-J/#psi_{2}", "J/#psi_{1}-#phi", "J/#psi_{2}-#phi"],
         [ROOT.kRed, ROOT.kBlue, ROOT.kGreen + 2],
-        os.path.join(args.output_dir, "delta_eta_comparison"),
-        "#Delta#eta Distributions",
-        "|#Delta#eta|"
+        os.path.join(args.output_dir, "delta_y_comparison"),
+        "#Delta y Distributions",
+        "|#Delta y|"
     )
     
     # Plot delta phi comparisons
@@ -252,17 +252,17 @@ def main():
     )
     
     # Plot individual 2D correlations
-    plot_2d(fin, "h2_deta_dphi_12", 
+    plot_2d(fin, "h2_dy_dphi_12", 
             os.path.join(args.output_dir, "correlation_2d_jpsi1_jpsi2"),
-            "J/#psi_{1} - J/#psi_{2}: #Delta#eta vs #Delta#phi")
+            "J/#psi_{1} - J/#psi_{2}: #Delta y vs #Delta#phi")
     
-    plot_2d(fin, "h2_deta_dphi_1phi",
+    plot_2d(fin, "h2_dy_dphi_1phi",
             os.path.join(args.output_dir, "correlation_2d_jpsi1_phi"),
-            "J/#psi_{1} - #phi: #Delta#eta vs #Delta#phi")
+            "J/#psi_{1} - #phi: #Delta y vs #Delta#phi")
     
-    plot_2d(fin, "h2_deta_dphi_2phi",
+    plot_2d(fin, "h2_dy_dphi_2phi",
             os.path.join(args.output_dir, "correlation_2d_jpsi2_phi"),
-            "J/#psi_{2} - #phi: #Delta#eta vs #Delta#phi")
+            "J/#psi_{2} - #phi: #Delta y vs #Delta#phi")
     
     # Plot all 2D correlations together
     plot_2d_all(fin, args.output_dir)
