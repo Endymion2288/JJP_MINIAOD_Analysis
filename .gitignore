@@ -1,2 +1,4 @@
 plots/
 *.root
+__pycache__/
+*.pyc

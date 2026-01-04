@@ -3,10 +3,11 @@
 Analyze MiniAOD prunedGenParticles to study correlations between
 Jpsi1, Jpsi2, and phi particles.
 
-Selection criteria:
-- Jpsi2 and phi must come from the same parton-level interaction
-- phi comes from a gluon decay
-- The gluon and Jpsi2 are produced in the same parton-parton interaction
+Selection criteria (DPS_2):
+- Jpsi1 and Jpsi2 come from the same parton-level interaction (share common ancestor)
+- Jpsi1 pT > Jpsi2 pT (sorted by pT)
+- If multiple Jpsi pairs exist, select the pair with highest total pT
+- phi: select the highest-pT phi that comes from a gluon decay
 
 Output: ROOT file with histograms and 2D plots
 """
@@ -185,6 +186,7 @@ def process_file_batch(file_batch, batch_id, output_dir, max_events_per_batch=-1
             if len(jpsis) < 2 or len(phis) < 1:
                 continue
 
+            # Sort by pT (highest first)
             jpsis.sort(key=lambda x: x.pt(), reverse=True)
             phis.sort(key=lambda x: x.pt(), reverse=True)
 
@@ -195,28 +197,30 @@ def process_file_batch(file_batch, batch_id, output_dir, max_events_per_batch=-1
             mother_chain_cache = {}
             ancestor_cache = {}
 
-            for phi_cand in phis:
-                if phi_cand.pt() <= 4.0:
-                    continue
-                is_from_gluon, gluon = phi_from_gluon(phi_cand, mother_chain_cache)
-                if not is_from_gluon:
-                    continue
-
-                for jpsi_cand in jpsis:
-                    has_common, _ = find_common_ancestor(jpsi_cand, gluon, mother_chain_cache, ancestor_cache)
-                    if has_common:
-                        selected_jpsi1 = jpsi_cand
-                        selected_phi = phi_cand
-                        break
-
-                if selected_jpsi1 is not None:
-                    break
-
-            if selected_jpsi1 is not None:
-                for jpsi_cand in jpsis:
-                    if jpsi_cand == selected_jpsi1:
+            # DPS_2 selection:
+            # 1. Find Jpsi1 and Jpsi2 from the same parton-level interaction
+            #    (share common ancestor), with Jpsi1 pT > Jpsi2 pT
+            # 2. If multiple pairs, select the one with highest total pT
+            best_pair_pt = -1
+            for i, jpsi_a in enumerate(jpsis):
+                for j, jpsi_b in enumerate(jpsis):
+                    if j <= i:
                         continue
-                    selected_jpsi2 = jpsi_cand
+                    # Check if they share a common ancestor
+                    has_common, _ = find_common_ancestor(jpsi_a, jpsi_b, mother_chain_cache, ancestor_cache)
+                    if has_common:
+                        total_pt = jpsi_a.pt() + jpsi_b.pt()
+                        if total_pt > best_pair_pt:
+                            best_pair_pt = total_pt
+                            # jpsi_a has higher pT than jpsi_b (already sorted)
+                            selected_jpsi1 = jpsi_a
+                            selected_jpsi2 = jpsi_b
+
+            # 3. phi: select the highest-pT phi from gluon decay
+            for phi_cand in phis:
+                is_from_gluon, gluon = phi_from_gluon(phi_cand, mother_chain_cache)
+                if is_from_gluon:
+                    selected_phi = phi_cand
                     break
 
             if selected_jpsi1 is None or selected_jpsi2 is None or selected_phi is None:
@@ -461,13 +465,14 @@ def analyze_miniaod_files_sequential(input_files, output_file, max_events=-1):
             if len(jpsis) < 2 or len(phis) < 1:
                 continue
 
-            # Sort by pT (highest first) so we pick the hardest objects when multiple match
+            # Sort by pT (highest first)
             jpsis.sort(key=lambda x: x.pt(), reverse=True)
             phis.sort(key=lambda x: x.pt(), reverse=True)
 
-            # New definition:
-            #   Jpsi1 = a J/psi that shares a hard-process ancestor with a phi from gluon decay (phi pT > 4 GeV)
-            #   Jpsi2 = any other J/psi (different from Jpsi1), prefer highest pT remaining
+            # DPS_2 selection:
+            #   Jpsi1 and Jpsi2 come from the same parton-level interaction (share common ancestor)
+            #   Jpsi1 pT > Jpsi2 pT; if multiple pairs, select highest total pT
+            #   phi: highest-pT phi from gluon decay
             selected_jpsi1 = None
             selected_jpsi2 = None
             selected_phi = None
@@ -476,30 +481,27 @@ def analyze_miniaod_files_sequential(input_files, output_file, max_events=-1):
             mother_chain_cache = {}
             ancestor_cache = {}
 
-            # First, find a phi from gluon with pT > 4 and a J/psi sharing the gluon ancestry
-            for phi_cand in phis:
-                if phi_cand.pt() <= 4.0:
-                    continue
-                is_from_gluon, gluon = phi_from_gluon(phi_cand, mother_chain_cache)
-                if not is_from_gluon:
-                    continue
-
-                for jpsi_cand in jpsis:
-                    has_common, _ = find_common_ancestor(jpsi_cand, gluon, mother_chain_cache, ancestor_cache)
-                    if has_common:
-                        selected_jpsi1 = jpsi_cand
-                        selected_phi = phi_cand
-                        break
-
-                if selected_jpsi1 is not None:
-                    break
-
-            # Pick Jpsi2 as a different J/psi (highest pT among remaining)
-            if selected_jpsi1 is not None:
-                for jpsi_cand in jpsis:
-                    if jpsi_cand == selected_jpsi1:
+            # 1. Find Jpsi pair from same parton-level interaction with highest total pT
+            best_pair_pt = -1
+            for i, jpsi_a in enumerate(jpsis):
+                for j, jpsi_b in enumerate(jpsis):
+                    if j <= i:
                         continue
-                    selected_jpsi2 = jpsi_cand
+                    # Check if they share a common ancestor
+                    has_common, _ = find_common_ancestor(jpsi_a, jpsi_b, mother_chain_cache, ancestor_cache)
+                    if has_common:
+                        total_pt = jpsi_a.pt() + jpsi_b.pt()
+                        if total_pt > best_pair_pt:
+                            best_pair_pt = total_pt
+                            # jpsi_a has higher pT than jpsi_b (already sorted)
+                            selected_jpsi1 = jpsi_a
+                            selected_jpsi2 = jpsi_b
+
+            # 2. phi: select the highest-pT phi from gluon decay
+            for phi_cand in phis:
+                is_from_gluon, gluon = phi_from_gluon(phi_cand, mother_chain_cache)
+                if is_from_gluon:
+                    selected_phi = phi_cand
                     break
 
             if selected_jpsi1 is None or selected_jpsi2 is None or selected_phi is None:
