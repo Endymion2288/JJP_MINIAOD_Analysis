@@ -359,34 +359,23 @@ def select_dps2(jpsis, phis, chain_cache, ancestor_cache):
 
 def select_tps(jpsis, phis, chain_cache, ancestor_cache):
     """
-    TPS selection: Jpsi1, Jpsi2, Phi come from different parton-level interactions
-                   Phi comes from gluon decay
+    TPS selection: only require Phi comes from gluon decay.
+    Choose highest-pT Jpsi1, Jpsi2, and highest-pT Phi from gluon.
     Returns: (jpsi1, jpsi2, phi) or (None, None, None)
     """
     # Need at least 2 J/psi
     if len(jpsis) < 2:
         return None, None, None
-    
-    for i, jpsi1 in enumerate(jpsis):
-        for jpsi2 in jpsis[i+1:]:
-            # Jpsi1 and Jpsi2 should NOT share common ancestor
-            has_common_jj, _ = find_common_ancestor(jpsi1, jpsi2, chain_cache, ancestor_cache)
-            if has_common_jj:
-                continue
-            
-            for phi_cand in phis:
-                # Check if phi comes from gluon
-                is_from_gluon, _ = phi_from_gluon(phi_cand, chain_cache)
-                if not is_from_gluon:
-                    continue
-                
-                # Phi should NOT share common ancestor with Jpsi1 or Jpsi2
-                has_common_j1p, _ = find_common_ancestor(jpsi1, phi_cand, chain_cache, ancestor_cache)
-                has_common_j2p, _ = find_common_ancestor(jpsi2, phi_cand, chain_cache, ancestor_cache)
-                
-                if not has_common_j1p and not has_common_j2p:
-                    return jpsi1, jpsi2, phi_cand
-    
+
+    # jpsis and phis are already sorted by pT (descending) upstream
+    jpsi1 = jpsis[0]
+    jpsi2 = jpsis[1]
+
+    for phi_cand in phis:
+        is_from_gluon, _ = phi_from_gluon(phi_cand, chain_cache)
+        if is_from_gluon:
+            return jpsi1, jpsi2, phi_cand
+
     return None, None, None
 
 
