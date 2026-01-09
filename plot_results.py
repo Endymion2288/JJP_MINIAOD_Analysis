@@ -60,6 +60,7 @@ def plot_1d_comparison(fin, hist_names, labels, colors, output_name, title, xlab
             h.SetMinimum(0.5)
         else:
             h.SetMaximum(max_val * 1.3)
+            h.SetMinimum(0)
         h.GetXaxis().SetTitle(xlabel)
         h.GetYaxis().SetTitle(ylabel)
         h.SetTitle(title)
@@ -154,6 +155,7 @@ def plot_kinematics(fin, output_dir, mode):
         
         max_val = max(h_jpsi1_pt.GetMaximum(), h_jpsi2_pt.GetMaximum(), h_phi_pt.GetMaximum())
         h_jpsi1_pt.SetMaximum(max_val * 1.3)
+        h_jpsi1_pt.SetMinimum(0)
         h_jpsi1_pt.SetTitle(f"Transverse Momentum Distributions ({mode})")
         h_jpsi1_pt.GetXaxis().SetTitle("p_{T} [GeV]")
         h_jpsi1_pt.GetYaxis().SetTitle("Events")
@@ -193,6 +195,7 @@ def plot_kinematics(fin, output_dir, mode):
         
         max_val = max(h_jpsi1_eta.GetMaximum(), h_jpsi2_eta.GetMaximum(), h_phi_eta.GetMaximum())
         h_jpsi1_eta.SetMaximum(max_val * 1.3)
+        h_jpsi1_eta.SetMinimum(0)
         h_jpsi1_eta.SetTitle(f"Pseudorapidity Distributions ({mode})")
         h_jpsi1_eta.GetXaxis().SetTitle("#eta")
         h_jpsi1_eta.GetYaxis().SetTitle("Events")
@@ -232,6 +235,7 @@ def plot_kinematics(fin, output_dir, mode):
         
         max_val = max(h_jpsi1_y.GetMaximum(), h_jpsi2_y.GetMaximum(), h_phi_y.GetMaximum())
         h_jpsi1_y.SetMaximum(max_val * 1.3)
+        h_jpsi1_y.SetMinimum(0)
         h_jpsi1_y.SetTitle(f"Rapidity Distributions ({mode})")
         h_jpsi1_y.GetXaxis().SetTitle("y")
         h_jpsi1_y.GetYaxis().SetTitle("Events")
