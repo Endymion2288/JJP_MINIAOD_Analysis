@@ -31,7 +31,6 @@ PDG_JPSI = 443
 PDG_PHI = 333
 PDG_GLUON = 21
 
-
 def delta_phi(phi1, phi2):
     """Calculate delta phi wrapped to [-pi, pi]"""
     dphi = phi1 - phi2
@@ -41,7 +40,6 @@ def delta_phi(phi1, phi2):
         dphi += 2.0 * ROOT.TMath.Pi()
     return dphi
 
-
 def rapidity(particle):
     """Calculate rapidity y = 0.5 * ln((E + pz) / (E - pz))"""
     E = particle.energy()
@@ -50,7 +48,6 @@ def rapidity(particle):
         # Fallback to pseudorapidity if rapidity is undefined
         return particle.eta()
     return 0.5 * ROOT.TMath.Log((E + pz) / (E - pz))
-
 
 def get_mother_chain(particle, cache=None):
     """Get the chain of mothers for a particle; cache to avoid re-traversal."""
