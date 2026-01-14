@@ -1,0 +1,60 @@
+# ==============================================================================
+# jjp_gen.sub - HTCondor submit file for JJP Gen-Level MC analysis
+# ==============================================================================
+# Submit various JJP modes: SPS, DPS_1, DPS_2, TPS
+#
+# Usage:
+#   condor_submit jjp_gen.sub                    # Submit DPS_1 (default)
+#   condor_submit jjp_gen.sub MODE=SPS           # Submit specific mode
+#   condor_submit jjp_gen.sub MODE=TPS JOBS=16   # Custom settings
+# ==============================================================================
+
+# Job configuration
+universe = vanilla
+executable = ./run_wrapper.sh
+
+# Default parameters (can be overridden)
+MODE = DPS_1
+JOBS = 8
+MAX_EVENTS = -1
+MAX_FILES = -1
+OUTPUT_DIR = output
+
+# Arguments passed to run_wrapper.sh
+arguments = "run_analysis.sh -m $(MODE) -j $(JOBS) -n $(MAX_EVENTS) --max-files $(MAX_FILES) -o $(OUTPUT_DIR)"
+
+# Log files
+log_dir = logs
+output = $(log_dir)/jjp_gen_$(MODE)_$(Cluster)_$(Process).out
+error = $(log_dir)/jjp_gen_$(MODE)_$(Cluster)_$(Process).err
+log = $(log_dir)/jjp_gen_$(MODE)_$(Cluster)_$(Process).log
+
+# Resource requests
+request_memory = 48000
+request_cpus = $(JOBS)
+request_disk = 10G
+
+# Job flavor (max runtime)
+# espresso = 20min, microcentury = 1h, longlunch = 2h, workday = 8h
+# tomorrow = 1d, testmatch = 3d, nextweek = 1w
++JobFlavour = "workday"
+
+# File transfer settings
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+transfer_output_files = output
+
+# Environment and proxy
+getenv = True
+use_x509userproxy = True
+x509userproxy = /afs/cern.ch/user/x/xcheng/x509up_u180107
+
+# Notification
+notification = Error
+notify_user = xcheng@cern.ch
+
+# Requirements
+requirements = (OpSysAndVer =?= "AlmaLinux9")
+
+# Queue
+queue

@@ -3,3 +3,4 @@ output/
 *.png
 *.root
 __pycache__/
+condor/logs/

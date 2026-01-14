@@ -42,6 +42,9 @@
 | `plot_results.py` | ROOT 输出文件的绘图脚本 |
 | `run_analysis.sh` | 单一模式分析运行脚本 |
 | `run_all_modes.sh` | 运行所有模式的脚本 |
+| `condor/` | HTCondor配置目录 |
+| `condor/submit.sh` | HTCondor作业提交管理脚本 |
+| `condor/jjp_gen.sub` | HTCondor提交配置文件 |
 
 ## 使用方法
 
@@ -174,3 +177,118 @@ output/
 2. 并行处理 (`-j > 1`) 使用 multiprocessing spawn 模式，避免 ROOT 在 fork 进程中的问题
 3. 如果遇到文件读取错误，脚本会跳过该文件并继续处理
 4. 与 JUP 分析不同，JJP 需要至少 2 个 J/ψ 粒子而非 1 个 J/ψ + 1 个 Υ
+
+---
+
+## HTCondor 批量作业提交
+
+### 准备工作
+
+1. **设置VOMS代理** (用于xrootd访问T2_CN_Beijing):
+```bash
+# 初始化代理 (有效期7天)
+voms-proxy-init --voms cms --valid 168:00
+
+# 复制到AFS供HTCondor使用
+cp /tmp/x509up_u$(id -u) /afs/cern.ch/user/x/xcheng/
+```
+
+2. **进入condor目录**:
+```bash
+cd condor/
+```
+
+### 使用submit.sh提交作业
+
+```bash
+# 查看帮助
+./submit.sh --help
+
+# 提交单个模式
+./submit.sh -m DPS_1
+./submit.sh -m SPS -j 16
+
+# 提交所有模式 (SPS, DPS_1, DPS_2, TPS)
+./submit.sh -m all
+
+# 限制处理文件数 (用于测试)
+./submit.sh -m DPS_1 --max-files 100
+
+# 试运行 (不实际提交)
+./submit.sh -m DPS_1 --dry-run
+
+# 查看作业状态
+./submit.sh --status
+
+# 清理日志文件
+./submit.sh --clean
+```
+
+### 直接使用condor_submit
+
+```bash
+# 基本提交
+condor_submit jjp_gen.sub
+
+# 覆盖默认参数
+condor_submit jjp_gen.sub MODE=SPS JOBS=16
+condor_submit jjp_gen.sub MODE=TPS MAX_FILES=50
+```
+
+### 作业配置参数
+
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| `MODE` | 选择模式 (SPS/DPS_1/DPS_2/TPS) | DPS_1 |
+| `JOBS` | 并行worker数 | 8 |
+| `MAX_EVENTS` | 最大处理事件数 (-1=全部) | -1 |
+| `MAX_FILES` | 最大处理文件数 (-1=全部) | -1 |
+| `OUTPUT_DIR` | 输出目录 | output |
+
+### 资源配置
+
+| 资源 | 配置值 |
+|------|--------|
+| 内存 | 48 GB |
+| CPU核心 | 8 (可通过JOBS覆盖) |
+| 磁盘 | 10 GB |
+| 时间限制 | workday (8h) |
+
+### 作业管理
+
+```bash
+# 查看当前作业
+condor_q
+
+# 取消作业
+condor_rm <job_id>
+
+# 查看作业日志
+tail -f condor/logs/jjp_gen_DPS_1_*.out
+
+# 检查错误
+cat condor/logs/jjp_gen_DPS_1_*.err
+```
+
+### Job Flavour (时间限制)
+
+| Flavour | 最大运行时间 |
+|---------|-------------|
+| espresso | 20 分钟 |
+| microcentury | 1 小时 |
+| longlunch | 2 小时 |
+| workday | 8 小时 |
+| tomorrow | 1 天 |
+| testmatch | 3 天 |
+
+修改时间限制:
+```bash
+./submit.sh -m all --flavor tomorrow
+```
+
+### 输出文件
+
+作业完成后，输出文件位于:
+- ROOT文件: `output/gen_correlation_<MODE>.root`
+- 图像: `output/plots_<MODE>/`
+- 日志: `condor/logs/`
